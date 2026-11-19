@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hong Kong Food Street: Voice Order Rush!</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka', 'Nunito', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+            background-color: #0f172a;
+        }
+
+        /* Custom Animations */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(239, 68, 68, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        .mic-active {
+            animation: pulse-ring 1.5s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes bounce-short {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .animate-bounce-short {
+            animation: bounce-short 0.5s ease;
+        }
+
+        /* Glassmorphism effects */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 4px solid #fde047;
+        }
+
+        .neon-text-yellow {
+            text-shadow: 0 0 10px rgba(250, 204, 21, 0.6), 0 0 20px rgba(250, 204, 21, 0.4);
+        }
+
+        .neon-text-red {
+            text-shadow: 0 0 10px rgba(239, 68, 68, 0.6), 0 0 20px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #f59e0b;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between overflow-x-hidden select-none bg-slate-900">
+
+    <!-- Top Navigation Header -->
+    <header class="w-full bg-slate-800/90 border-b-4 border-amber-400 p-3 flex justify-between items-center shadow-lg px-4 md:px-8 z-20">
+        <div class="flex items-center space-x-3">
+            <span class="text-3xl md:text-4xl">🇭🇰</span>
+            <div>
+                <h1 class="text-xl md:text-2xl font-black text-amber-400 tracking-wide leading-none">HK FOOD RUSH</h1>
+                <p class="text-xs text-amber-200 font-semibold hidden md:block">Speak into the iPad mic to serve dishes!</p>
+            </div>
+        </div>
+
+        <!-- Scoreboard & Timer -->
+        <div class="flex items-center space-x-4">
+            <div class="bg-slate-900 border-2 border-amber-400/50 rounded-xl px-4 py-1.5 flex items-center space-x-2">
+                <i class="fa-solid fa-star text-amber-400 text-lg"></i>
+                <span class="text-xs text-slate-400 uppercase font-bold">Score</span>
+                <span id="score-display" class="text-xl font-black text-white">0</span>
+            </div>
+
+            <div class="bg-slate-900 border-2 border-rose-500/50 rounded-xl px-4 py-1.5 flex items-center space-x-2">
+                <i class="fa-solid fa-clock text-rose-500 text-lg"></i>
+                <span class="text-xs text-slate-400 uppercase font-bold">Time</span>
+                <span id="timer-display" class="text-xl font-black text-white">60s</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Game Workspace -->
+    <main class="flex-grow flex flex-col items-center justify-between p-3 md:p-6 max-w-6xl w-full mx-auto relative z-10">
+
+        <!-- Customer & Order Speech Bubble Stage -->
+        <div class="w-full flex flex-col md:flex-row items-center justify-between gap-4 my-auto">
+            
+            <!-- Customer Avatar -->
+            <div class="flex flex-col items-center justify-center relative w-full md:w-1/3">
+                <div class="relative">
+                    <!-- Customer Image/Emoji Avatar Container -->
+                    <div id="customer-avatar" class="w-32 h-32 md:w-44 md:h-44 bg-gradient-to-tr from-amber-200 to-amber-400 rounded-full border-4 border-white shadow-2xl flex items-center justify-center text-7xl md:text-8xl animate-float">
+                        😋
+                    </div>
+                    <!-- Patience Meter Bar -->
+                    <div class="w-full bg-slate-700 h-3 rounded-full overflow-hidden mt-3 border border-slate-600">
+                        <div id="patience-bar" class="bg-emerald-400 h-full w-full transition-all duration-300"></div>
+                    </div>
+                </div>
+                <div id="customer-name" class="mt-2 text-amber-300 font-bold text-sm tracking-wider uppercase">Hungry Tourist</div>
+            </div>
+
+            <!-- Speech Order Bubble -->
+            <div class="w-full md:w-2/3 bg-white rounded-3xl p-5 md:p-8 border-4 border-amber-400 shadow-2xl relative flex flex-col justify-between">
+                <!-- Pointer Triangle for Speech Bubble (desktop) -->
+                <div class="hidden md:block absolute -left-4 top-1/2 -translate-y-1/2 w-0 h-0 border-t-[15px] border-t-transparent border-r-[20px] border-r-amber-400 border-b-[15px] border-b-transparent"></div>
+                
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold uppercase tracking-wider text-amber-600 bg-amber-100 px-3 py-1 rounded-full">
+                            <i class="fa-solid fa-utensils mr-1"></i> Multi-Item Combo Order
+                        </span>
+                        <span id="item-count-badge" class="text-xs font-bold uppercase tracking-wider text-purple-600 bg-purple-100 px-3 py-1 rounded-full">
+                            3 Items Required
+                        </span>
+                    </div>
+
+                    <h2 class="text-lg md:text-xl font-bold text-slate-700">"I would like to order:"</h2>
+                    
+                    <!-- Order Items Display -->
+                    <div id="order-container" class="my-4 flex flex-wrap gap-3 min-h-[70px] items-center">
+                        <!-- Dynamic Order Badges will go here -->
+                        <span class="text-slate-400 italic">Press "Start Game" to take orders!</span>
+                    </div>
+                </div>
+
+                <!-- Recognized Speech Transcript Display Box -->
+                <div class="mt-4 pt-4 border-t-2 border-slate-100 flex flex-col gap-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                            <i class="fa-solid fa-microphone mr-1"></i> Microphone Input:
+                        </span>
+                        <span id="speech-status" class="text-xs font-bold text-rose-500 animate-pulse">
+                            Mic Off
+                        </span>
+                    </div>
+                    <div id="transcript-box" class="bg-slate-100 rounded-xl p-3 min-h-[48px] text-base md:text-lg font-extrabold text-slate-800 flex items-center justify-between border border-slate-200">
+                        <span id="transcript-text" class="text-slate-400 italic font-normal text-sm">Tap the microphone and say the target food items clearly...</span>
+                        <i id="voice-indicator" class="fa-solid fa-circle text-slate-300 text-xs"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Voice Control & Action Buttons -->
+        <div class="w-full flex flex-col items-center justify-center my-4 gap-3">
+            <div class="flex items-center justify-center gap-4 w-full">
+                <!-- Push to Talk / Toggle Mic Button -->
+                <button id="mic-btn" disabled class="flex-1 md:flex-none md:w-80 bg-rose-500 hover:bg-rose-600 text-white font-black text-lg md:text-xl py-4 px-8 rounded-2xl shadow-xl border-b-4 border-rose-700 active:translate-y-1 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i id="mic-icon" class="fa-solid fa-microphone text-2xl"></i>
+                    <span id="mic-btn-text">TAP & SPEAK NOW</span>
+                </button>
+
+                <!-- Skip / Next Order Button -->
+                <button id="skip-btn" disabled class="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold p-4 rounded-2xl border-b-4 border-slate-900 active:translate-y-1 transition-all flex items-center justify-center" title="Skip Customer (-5 pts)">
+                    <i class="fa-solid fa-forward-step text-xl"></i>
+                </button>
+            </div>
+            
+            <p class="text-slate-400 text-xs text-center">
+                Tip: Speak clearly! You can say individual food names or full sentences like 
+                <span class="text-amber-300 font-semibold">"Egg Tart and Pineapple Bun"</span>.
+            </p>
+        </div>
+
+        <!-- Food Menu Reference Cards Grid -->
+        <div class="w-full mt-2">
+            <h3 class="text-slate-300 text-xs uppercase font-extrabold tracking-widest mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-book-open text-amber-400"></i> Hong Kong Menu Cheat Sheet (Tap any item to listen)
+            </h3>
+            
+            <div id="menu-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3 max-h-48 overflow-y-auto p-1">
+                <!-- Populated dynamically by JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Overlay Screen (Start / Game Over) -->
+    <div id="modal-overlay" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+        <div class="glass-card max-w-lg w-full rounded-3xl p-6 md:p-8 text-center shadow-2xl flex flex-col items-center border-4 border-amber-400">
+            
+            <!-- Icon / Graphic -->
+            <div id="modal-icon" class="w-24 h-24 bg-amber-400 rounded-full flex items-center justify-center text-5xl mb-4 shadow-inner">
+                🥟
+            </div>
+
+            <!-- Title -->
+            <h2 id="modal-title" class="text-3xl md:text-4xl font-black text-slate-900 mb-2">
+                HK FOOD STREET
+            </h2>
+
+            <!-- Description -->
+            <p id="modal-desc" class="text-slate-700 text-sm md:text-base font-semibold mb-6">
+                Serve hungry customers by speaking their multi-item Hong Kong food orders into your iPad microphone!
+            </p>
+
+            <!-- Mode Selector Removed for Single Level -->
+            <div id="modal-options" class="w-full mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-200 text-left text-xs font-bold text-slate-700">
+                <i class="fa-solid fa-bullhorn text-amber-500 text-sm mr-1"></i> <strong>Challenge Mode:</strong> Every order has 2 to 4 delicious items. Speak them all clearly into the microphone to fulfill the customer order!
+            </div>
+
+            <!-- Primary Action Button -->
+            <button id="start-game-btn" class="w-full bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xl py-4 rounded-2xl shadow-xl border-b-4 border-amber-700 active:translate-y-1 transition-all uppercase tracking-wider">
+                Start Cooking! 🚀
+            </button>
+        </div>
+    </div>
+
+    <!-- Audio Effects (Web Audio API Synthesizer Helper) -->
+    <script>
+        // Sound FX Generator using Web Audio API (No external sound files required)
+        class SoundFX {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            playCorrect() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.2); // G5
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            }
+
+            playWrong() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now); // A3
+                osc.frequency.setValueAtTime(174.61, now + 0.15); // F3
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            }
+
+            playWin() {
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const notes = [440, 554.37, 659.25, 880];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    const now = this.ctx.currentTime + (i * 0.1);
+
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                });
+            }
+        }
+
+        const sounds = new SoundFX();
+    </script>
+
+    <!-- Main Game Logic Script -->
+    <script>
+        // --- REALISTIC SVG ILLUSTRATIONS FOR HK FOODS ---
+        const SVG_FOOD_ICONS = {
+            'egg-tart': `<svg viewBox="0 0 100 100" class="w-12 h-12"><ellipse cx="50" cy="65" rx="42" ry="22" fill="#d97706"/><path d="M12 55 Q 50 85 88 55 Q 88 40 50 32 Q 12 40 12 55" fill="#f59e0b"/><ellipse cx="50" cy="48" rx="30" ry="14" fill="#fbbf24"/><ellipse cx="50" cy="46" rx="22" ry="10" fill="#fef08a"/></svg>`,
+            'pineapple-bun': `<svg viewBox="0 0 100 100" class="w-12 h-12"><ellipse cx="50" cy="60" rx="42" ry="26" fill="#b45309"/><ellipse cx="50" cy="50" rx="40" ry="26" fill="#f59e0b"/><path d="M 20 40 Q 50 20 80 40 M 15 50 Q 50 30 85 50 M 25 30 Q 50 60 75 30 M 35 25 Q 60 55 85 25" stroke="#fef08a" stroke-width="3" fill="none"/><rect x="30" y="58" width="40" height="10" rx="3" fill="#facc15"/></svg>`,
+            'milk-tea': `<svg viewBox="0 0 100 100" class="w-12 h-12"><rect x="30" y="25" width="40" height="55" rx="6" fill="#d97706"/><rect x="35" y="30" width="30" height="45" rx="4" fill="#b45309"/><ellipse cx="50" cy="25" rx="20" ry="6" fill="#fef08a"/><path d="M 60 15 L 75 70" stroke="#ef4444" stroke-width="6" stroke-linecap="round"/><rect x="40" y="38" width="10" height="10" fill="#ffffff" opacity="0.6"/><rect x="52" y="50" width="8" height="8" fill="#ffffff" opacity="0.6"/></svg>`,
+            'ice-lemon-tea': `<svg viewBox="0 0 100 100" class="w-12 h-12"><rect x="30" y="22" width="40" height="60" rx="6" fill="#ca8a04"/><rect x="34" y="28" width="32" height="50" rx="4" fill="#b45309"/><circle cx="45" cy="35" r="10" fill="#fef08a" stroke="#eab308" stroke-width="2"/><circle cx="55" cy="48" r="9" fill="#fef08a" stroke="#eab308" stroke-width="2"/><path d="M 65 10 L 72 75" stroke="#3b82f6" stroke-width="5" stroke-linecap="round"/><rect x="40" y="55" width="8" height="8" fill="#ffffff" opacity="0.6"/></svg>`,
+            'butter-toast': `<svg viewBox="0 0 100 100" class="w-12 h-12"><rect x="18" y="25" width="64" height="55" rx="8" fill="#b45309"/><rect x="22" y="29" width="56" height="47" rx="6" fill="#fef08a"/><rect x="38" y="42" width="24" height="20" rx="4" fill="#facc15" stroke="#eab308" stroke-width="2"/><path d="M 40 44 L 50 48 L 45 60 Z" fill="#ffffff" opacity="0.4"/></svg>`,
+            'bubble-tea': `<svg viewBox="0 0 100 100" class="w-12 h-12"><rect x="28" y="25" width="44" height="55" rx="6" fill="#d97706"/><rect x="32" y="30" width="36" height="46" rx="4" fill="#b45309"/><ellipse cx="50" cy="25" rx="22" ry="5" fill="#fde047"/><line x1="50" y1="10" x2="50" y2="78" stroke="#1e293b" stroke-width="6" stroke-linecap="round"/><circle cx="40" cy="68" r="4" fill="#0f172a"/><circle cx="52" cy="70" r="4" fill="#0f172a"/><circle cx="62" cy="66" r="4" fill="#0f172a"/><circle cx="46" cy="60" r="4" fill="#0f172a"/></svg>`,
+            'egg-waffle': `<svg viewBox="0 0 100 100" class="w-12 h-12"><path d="M20 35 L80 35 L85 80 L15 80 Z" fill="#f59e0b" rx="5"/><circle cx="35" cy="48" r="7" fill="#fbbf24"/><circle cx="50" cy="48" r="7" fill="#fbbf24"/><circle cx="65" cy="48" r="7" fill="#fbbf24"/><circle cx="28" cy="64" r="7" fill="#fbbf24"/><circle cx="43" cy="64" r="7" fill="#fbbf24"/><circle cx="58" cy="64" r="7" fill="#fbbf24"/><circle cx="72" cy="64" r="7" fill="#fbbf24"/></svg>`,
+            'curry-fish-balls': `<svg viewBox="0 0 100 100" class="w-12 h-12"><line x1="50" y1="10" x2="50" y2="90" stroke="#78350f" stroke-width="5"/><circle cx="50" cy="28" r="16" fill="#eab308"/><circle cx="50" cy="50" r="16" fill="#ca8a04"/><circle cx="50" cy="72" r="16" fill="#ca8a04"/><ellipse cx="45" cy="24" rx="4" ry="2" fill="#fef08a"/></svg>`,
+            'dim-sum-har-gow': `<svg viewBox="0 0 100 100" class="w-12 h-12"><ellipse cx="50" cy="65" rx="44" ry="20" fill="#a1a1aa"/><ellipse cx="50" cy="55" rx="40" ry="18" fill="#e4e4e7"/><path d="M 20 50 Q 50 15 80 50 Q 50 75 20 50" fill="#ffffff" stroke="#f43f5e" stroke-width="2" opacity="0.9"/><circle cx="50" cy="48" r="14" fill="#fda4af" opacity="0.7"/></svg>`,
+            'siu-mai': `<svg viewBox="0 0 100 100" class="w-12 h-12"><rect x="25" y="40" width="50" height="35" rx="10" fill="#eab308"/><ellipse cx="50" cy="40" rx="25" ry="10" fill="#ca8a04"/><ellipse cx="50" cy="40" rx="20" ry="7" fill="#b45309"/><circle cx="50" cy="40" r="3" fill="#ef4444"/></svg>`,
+            'char-siu-bao': `<svg viewBox="0 0 100 100" class="w-12 h-12"><ellipse cx="50" cy="60" rx="38" ry="24" fill="#f4f4f5"/><path d="M20 55 Q 50 20 80 55 Q 50 75 20 55" fill="#ffffff"/><path d="M42 32 L50 42 L58 32 Q 50 36 42 32" fill="#b45309"/></svg>`,
+            'stinky-tofu': `<svg viewBox="0 0 100 100" class="w-12 h-12"><rect x="20" y="30" width="60" height="45" rx="6" fill="#78350f"/><rect x="28" y="38" width="44" height="29" fill="#a16207"/><path d="M45 42 L55 42 L50 60 Z" fill="#dc2626"/></svg>`,
+            'wonton-noodles': `<svg viewBox="0 0 100 100" class="w-12 h-12"><path d="M 15 45 Q 50 85 85 45 Z" fill="#94a3b8"/><path d="M 18 45 Q 50 80 82 45" fill="#eab308"/><circle cx="38" cy="40" r="10" fill="#fecdd3"/><circle cx="62" cy="40" r="10" fill="#fecdd3"/><path d="M20 20 L80 50 M25 15 L85 45" stroke="#78350f" stroke-width="4"/></svg>`,
+            'roast-goose': `<svg viewBox="0 0 100 100" class="w-12 h-12"><ellipse cx="50" cy="65" rx="40" ry="18" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/><path d="M 25 55 Q 50 35 75 50 Q 60 70 25 55" fill="#7c2d12"/><rect x="55" y="60" width="30" height="8" rx="4" fill="#15803d"/></svg>`,
+            'claypot-rice': `<svg viewBox="0 0 100 100" class="w-12 h-12"><path d="M 15 40 L 85 40 L 75 75 L 25 75 Z" fill="#334155"/><ellipse cx="50" cy="40" rx="35" ry="10" fill="#f8fafc"/><rect x="35" y="36" width="30" height="6" fill="#991b1b" rx="2"/><circle cx="30" cy="42" r="3" fill="#15803d"/></svg>`
+        };
+
+        // --- CUSTOMER AVATARS ---
+        const CUSTOMERS = [
+            { name: "Hungry Tourist", emoji: "😋" },
+            { name: "Foodie Student", emoji: "🤓" },
+            { name: "Busy Office Worker", emoji: "👔" },
+            { name: "Dim Sum Enthusiast", emoji: "😍" },
+            { name: "Local Food Critic", emoji: "🧐" }
+        ];
+
+        // --- DATA DICTIONARY FOR HONG KONG FOODS ---
+        const HK_FOODS = [
+            {
+                id: 'egg-tart',
+                name: 'Egg Tart',
+                adjective: 'Rich & Flaky',
+                phrases: ['egg tart', 'tart', 'egg tarts'],
+                color: 'bg-amber-100 text-amber-800 border-amber-300'
+            },
+            {
+                id: 'pineapple-bun',
+                name: 'Pineapple Bun',
+                adjective: 'Fluffy & Crispy',
+                phrases: ['pineapple bun', 'pineapple bun with butter', 'bun'],
+                color: 'bg-yellow-100 text-yellow-800 border-yellow-300'
+            },
+            {
+                id: 'milk-tea',
+                name: 'Milk Tea',
+                adjective: 'Silky & Smooth',
+                phrases: ['milk tea', 'hong kong milk tea', 'tea'],
+                color: 'bg-orange-100 text-orange-800 border-orange-300'
+            },
+            {
+                id: 'ice-lemon-tea',
+                name: 'Ice Lemon Tea',
+                adjective: 'Citrusy & Refreshing',
+                phrases: ['ice lemon tea', 'iced lemon tea', 'lemon tea'],
+                color: 'bg-amber-100 text-amber-900 border-amber-400'
+            },
+            {
+                id: 'butter-toast',
+                name: 'Butter Toast',
+                adjective: 'Thick & Buttery',
+                phrases: ['butter toast', 'toasted bread', 'toast'],
+                color: 'bg-yellow-200 text-yellow-950 border-yellow-400'
+            },
+            {
+                id: 'bubble-tea',
+                name: 'Bubble Tea',
+                adjective: 'Sweet & Chewy',
+                phrases: ['bubble tea', 'boba tea', 'boba'],
+                color: 'bg-amber-100 text-amber-800 border-amber-300'
+            },
+            {
+                id: 'egg-waffle',
+                name: 'Egg Waffle',
+                adjective: 'Crunchy & Sweet',
+                phrases: ['egg waffle', 'gai daan jai', 'waffle'],
+                color: 'bg-amber-100 text-amber-900 border-amber-400'
+            },
+            {
+                id: 'curry-fish-balls',
+                name: 'Curry Fish Balls',
+                adjective: 'Spicy & Chewy',
+                phrases: ['curry fish balls', 'fish balls', 'curry fishball'],
+                color: 'bg-red-100 text-red-800 border-red-300'
+            },
+            {
+                id: 'dim-sum-har-gow',
+                name: 'Shrimp Dumplings',
+                adjective: 'Plump & Tender',
+                phrases: ['shrimp dumplings', 'har gow', 'dumplings'],
+                color: 'bg-rose-100 text-rose-800 border-rose-300'
+            },
+            {
+                id: 'siu-mai',
+                name: 'Pork Siu Mai',
+                adjective: 'Juicy & Savory',
+                phrases: ['pork siu mai', 'siu mai', 'shumai'],
+                color: 'bg-yellow-100 text-yellow-900 border-yellow-400'
+            },
+            {
+                id: 'char-siu-bao',
+                name: 'BBQ Pork Buns',
+                adjective: 'Soft & Pillowy',
+                phrases: ['bbq pork buns', 'char siu bao', 'pork bun'],
+                color: 'bg-stone-100 text-stone-800 border-stone-300'
+            },
+            {
+                id: 'stinky-tofu',
+                name: 'Stinky Tofu',
+                adjective: 'Crispy & Pungent',
+                phrases: ['stinky tofu', 'tofu'],
+                color: 'bg-amber-200 text-amber-950 border-amber-500'
+            },
+            {
+                id: 'wonton-noodles',
+                name: 'Wonton Noodle Soup',
+                adjective: 'Rich & Flavorful',
+                phrases: ['wonton noodle soup', 'wonton noodles', 'noodle soup'],
+                color: 'bg-emerald-100 text-emerald-800 border-emerald-300'
+            },
+            {
+                id: 'roast-goose',
+                name: 'Roast Goose Rice',
+                adjective: 'Crispy & Succulent',
+                phrases: ['roast goose rice', 'roast goose', 'goose rice'],
+                color: 'bg-amber-100 text-amber-800 border-amber-300'
+            },
+            {
+                id: 'claypot-rice',
+                name: 'Claypot Rice',
+                adjective: 'Smoky & Crispy',
+                phrases: ['claypot rice', 'claypot', 'lap mei'],
+                color: 'bg-stone-200 text-stone-900 border-stone-400'
+            }
+        ];
+
+        // --- GAME STATE VARIABLES ---
+        let score = 0;
+        let timeLeft = 60;
+        let gameInterval = null;
+        let patienceInterval = null;
+        let currentOrder = []; // Array of required food objects
+        let currentFulfilled = []; // Track boolean matching status
+        let isListening = false;
+        let recognition = null;
+        let isGameActive = false;
+        let difficulty = 'normal';
+
+        // --- DOM ELEMENTS ---
+        const micBtn = document.getElementById('mic-btn');
+        const micBtnText = document.getElementById('mic-btn-text');
+        const micIcon = document.getElementById('mic-icon');
+        const speechStatus = document.getElementById('speech-status');
+        const transcriptText = document.getElementById('transcript-text');
+        const voiceIndicator = document.getElementById('voice-indicator');
+        const scoreDisplay = document.getElementById('score-display');
+        const timerDisplay = document.getElementById('timer-display');
+        const orderContainer = document.getElementById('order-container');
+        const patienceBar = document.getElementById('patience-bar');
+        const customerAvatar = document.getElementById('customer-avatar');
+        const customerName = document.getElementById('customer-name');
+        const menuGrid = document.getElementById('menu-grid');
+        const skipBtn = document.getElementById('skip-btn');
+        
+        // Modal DOM
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalDesc = document.getElementById('modal-desc');
+        const modalIcon = document.getElementById('modal-icon');
+        const startGameBtn = document.getElementById('start-game-btn');
+
+        // --- INITIALIZATION ---
+        window.addEventListener('DOMContentLoaded', () => {
+            renderCheatSheetMenu();
+            setupWebSpeechAPI();
+            
+            startGameBtn.addEventListener('click', startGame);
+            micBtn.addEventListener('click', toggleSpeechRecognition);
+            skipBtn.addEventListener('click', skipOrder);
+        });
+
+        // --- WEB SPEECH API INITIALIZATION & CONTROLS ---
+        function setupWebSpeechAPI() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+            if (!SpeechRecognition) {
+                speechStatus.innerText = "Speech API Not Supported";
+                speechStatus.className = "text-xs font-bold text-rose-500";
+                transcriptText.innerText = "Browser doesn't support Web Speech API. Use Chrome or Safari on iPad.";
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                isListening = true;
+                speechStatus.innerText = "Listening...";
+                speechStatus.className = "text-xs font-bold text-emerald-500 animate-pulse";
+                micBtn.classList.add('mic-active', 'bg-emerald-500', 'hover:bg-emerald-600', 'border-emerald-700');
+                micBtn.classList.remove('bg-rose-500', 'hover:bg-rose-600', 'border-rose-700');
+                micBtnText.innerText = "LISTENING... SPEAK NOW";
+                micIcon.className = "fa-solid fa-microphone-lines text-2xl animate-bounce";
+                voiceIndicator.className = "fa-solid fa-circle text-emerald-500 text-xs animate-ping";
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                speechStatus.innerText = "Mic Paused";
+                speechStatus.className = "text-xs font-bold text-amber-500";
+                micBtn.classList.remove('mic-active', 'bg-emerald-500', 'hover:bg-emerald-600', 'border-emerald-700');
+                micBtn.classList.add('bg-rose-500', 'hover:bg-rose-600', 'border-rose-700');
+                micBtnText.innerText = "TAP TO RESUME MIC";
+                micIcon.className = "fa-solid fa-microphone text-2xl";
+                voiceIndicator.className = "fa-solid fa-circle text-slate-300 text-xs";
+
+                // Automatically restart listening if game is active
+                if (isGameActive) {
+                    try { recognition.start(); } catch(e) {}
+                }
+            };
+
+            recognition.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    transcript += event.results[i][0].transcript;
+                }
+                
+                const cleanTranscript = transcript.toLowerCase().trim();
+                transcriptText.innerText = `"${transcript}"`;
+                transcriptText.classList.remove('italic', 'font-normal', 'text-slate-400');
+                transcriptText.classList.add('font-bold', 'text-slate-800');
+
+                checkSpeechMatch(cleanTranscript);
+            };
+
+            recognition.onerror = (event) => {
+                console.warn("Speech Recognition Error:", event.error);
+                if (event.error === 'not-allowed') {
+                    speechStatus.innerText = "Mic Permission Denied";
+                    transcriptText.innerText = "Please allow microphone access in your iPad settings.";
+                }
+            };
+        }
+
+        function toggleSpeechRecognition() {
+            if (!recognition) return;
+
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.log("Recognition already active or starting", e);
+                }
+            }
+        }
+
+        function playTTS(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            timerDisplay.innerText = `${timeLeft}s`;
+
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }
+
+        // --- RENDER MENU CHEAT SHEET ---
+        function renderCheatSheetMenu() {
+            menuGrid.innerHTML = '';
+            HK_FOODS.forEach(food => {
+                const card = document.createElement('div');
+                card.className = `p-2 rounded-xl border-2 ${food.color} flex flex-col items-center text-center cursor-pointer hover:scale-105 transition-transform shadow-sm relative group`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-center">${SVG_FOOD_ICONS[food.id]}</div>
+                    <span class="text-xs font-black leading-tight mt-1">${food.name}</span>
+                    <span class="text-[10px] opacity-75 font-bold">${food.adjective}</span>
+                    <button class="mt-1 px-2 py-0.5 bg-white/70 hover:bg-white text-slate-700 text-[10px] font-bold rounded-md shadow-xs flex items-center gap-1">
+                        <i class="fa-solid fa-volume-high text-[9px]"></i> Listen
+                    </button>
+                `;
+                // TTS Pronunciation helper on tap
+                card.addEventListener('click', () => playTTS(`${food.adjective} ${food.name}`));
+                menuGrid.appendChild(card);
+            });
+        }
+
+        // --- GAMEPLAY CONTROL FUNCTIONS ---
+
+        function startGame() {
+            score = 0;
+            timeLeft = 60;
+            isGameActive = true;
+            scoreDisplay.innerText = score;
+            timerDisplay.innerText = `${timeLeft}s`;
+
+            micBtn.disabled = false;
+            skipBtn.disabled = false;
+
+            modalOverlay.classList.add('hidden');
+
+            clearInterval(gameInterval);
+            gameInterval = setInterval(updateTimer, 1000);
+
+            generateNewCustomerOrder();
+
+            if (recognition && !isListening) {
+                try { recognition.start(); } catch(e){}
+            }
+        }
+
+        function generateNewCustomerOrder() {
+            const randomCust = CUSTOMERS[Math.floor(Math.random() * CUSTOMERS.length)];
+            customerAvatar.innerText = randomCust.emoji;
+            customerName.innerText = randomCust.name;
+
+            // Generate multi-item orders (between 2 and 4 items per customer)
+            const itemCount = Math.floor(Math.random() * 3) + 2; 
+
+            const shuffled = [...HK_FOODS].sort(() => 0.5 - Math.random());
+            currentOrder = shuffled.slice(0, itemCount);
+            currentFulfilled = new Array(itemCount).fill(false);
+
+            document.getElementById('item-count-badge').innerText = `${itemCount} Items Required`;
+
+            renderOrderUI();
+            resetPatienceMeter();
+        }
+
+        function renderOrderUI() {
+            orderContainer.innerHTML = '';
+
+            currentOrder.forEach((food, index) => {
+                const isDone = currentFulfilled[index];
+                const badge = document.createElement('div');
+                badge.className = `flex items-center gap-2 p-2 md:p-3 rounded-2xl border-2 transition-all duration-300 ${
+                    isDone 
+                        ? 'bg-emerald-500 text-white border-emerald-600 scale-105 shadow-md' 
+                        : `${food.color} shadow-sm`
+                }`;
+
+                badge.innerHTML = `
+                    <div class="flex items-center justify-center">${SVG_FOOD_ICONS[food.id]}</div>
+                    <div class="flex flex-col">
+                        <span class="text-xs uppercase font-extrabold opacity-80">${food.adjective}</span>
+                        <span class="text-sm md:text-base font-black leading-tight">${food.name}</span>
+                    </div>
+                    <i class="fa-solid ${isDone ? 'fa-circle-check text-white' : 'fa-circle-dot opacity-40'} text-lg ml-2"></i>
+                `;
+
+                orderContainer.appendChild(badge);
+            });
+        }
+
+        function resetPatienceMeter() {
+            clearInterval(patienceInterval);
+            patienceBar.style.width = '100%';
+            patienceBar.className = "bg-emerald-400 h-full w-full transition-all duration-300";
+
+            let patience = 100;
+            const decayRate = 1.5;
+
+            patienceInterval = setInterval(() => {
+                if (!isGameActive) return;
+                patience -= decayRate;
+                patienceBar.style.width = `${Math.max(0, patience)}%`;
+
+                if (patience < 50 && patience > 20) {
+                    patienceBar.className = "bg-amber-400 h-full w-full transition-all duration-300";
+                } else if (patience <= 20) {
+                    patienceBar.className = "bg-rose-500 h-full w-full transition-all duration-300 animate-pulse";
+                }
+
+                if (patience <= 0) {
+                    clearInterval(patienceInterval);
+                    sounds.playWrong();
+                    customerAvatar.classList.add('animate-bounce-short');
+                    // Lose points for customer leaving
+                    score = Math.max(0, score - 5);
+                    scoreDisplay.innerText = score;
+                    generateNewCustomerOrder();
+                }
+            }, 300);
+        }
+
+        // --- SPEECH EVALUATION ENGINE ---
+        function checkSpeechMatch(spokenText) {
+            if (!isGameActive || currentOrder.length === 0) return;
+
+            let newlyFulfilled = false;
+
+            currentOrder.forEach((food, index) => {
+                if (!currentFulfilled[index]) {
+                    // Check if spoken text contains any valid phrase for this food item
+                    const matchesFood = food.phrases.some(phrase => spokenText.includes(phrase));
+                    
+                    if (matchesFood) {
+                        currentFulfilled[index] = true;
+                        newlyFulfilled = true;
+                    }
+                }
+            });
+
+            if (newlyFulfilled) {
+                sounds.playCorrect();
+                renderOrderUI();
+
+                // Check if ENTIRE order is completed
+                const allDone = currentFulfilled.every(status => status === true);
+                if (allDone) {
+                    // Score bonus points based on speed/difficulty
+                    const points = currentOrder.length * 10;
+                    score += points;
+                    scoreDisplay.innerText = score;
+
+                    // Animate customer happiness
+                    customerAvatar.innerText = '🤩';
+                    sounds.playWin();
+
+                    // Delay slightly to let user celebrate before next order
+                    setTimeout(() => {
+                        generateNewCustomerOrder();
+                    }, 800);
+                }
+            }
+        }
+
+        function skipOrder() {
+            if (!isGameActive) return;
+            sounds.playWrong();
+            score = Math.max(0, score - 5);
+            scoreDisplay.innerText = score;
+            generateNewCustomerOrder();
+        }
+
+        function endGame() {
+            isGameActive = false;
+            clearInterval(gameInterval);
+            clearInterval(patienceInterval);
+
+            if (recognition && isListening) {
+                recognition.stop();
+            }
+
+            // Disable controls
+            micBtn.disabled = true;
+            skipBtn.disabled = true;
+
+            // Show Game Over Modal
+            modalIcon.innerText = score >= 50 ? '🏆' : '👍';
+            modalTitle.innerText = "TIME'S UP!";
+            modalDesc.innerHTML = `Great effort serving Hong Kong street food!<br><br>Final Score: <strong class="text-amber-500 text-3xl font-black">${score} Points</strong>`;
+            startGameBtn.innerText = "Play Again! 🔄";
+
+            modalOverlay.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
